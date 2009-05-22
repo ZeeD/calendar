@@ -2,7 +2,7 @@
 
 # Form implementation generated from reading ui file 'new_machine.ui'
 #
-# Created: Fri May 22 08:46:53 2009
+# Created: Fri May 22 09:01:51 2009
 #      by: PyQt4 UI code generator 4.4.4
 #
 # WARNING! All changes made in this file will be lost!

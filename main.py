@@ -1,12 +1,17 @@
 #!/usr/bin/env python
 
+"""
+Spreadsheet-like scrollable program I made for my dad
+"""
+
 from main_ui import Ui_MainWindow
 from PyQt4.QtGui import QApplication, QMainWindow
 
 if __name__ == "__main__":
-    APP = QApplication(['dummy'])
+    from sys import argv
+    APP = QApplication(argv)
     MAIN = QMainWindow()
     UI = Ui_MainWindow()
     UI.setupUi(MAIN)
     MAIN.show()
-    raise SystemExit(APP.exec_())
+    exit(APP.exec_())
