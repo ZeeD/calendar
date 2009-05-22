@@ -11,8 +11,8 @@ class NewMachine(QDialog):
     """
 
     """
-    def __init__(self, dbhandler):
+    def __init__(self, header_table):
         QDialog.__init__(self)
-        self.dbhandler = dbhandler
+        self.dbhandler = header_table
         self.ui_new_machine = Ui_NewMachine()
         self.ui_new_machine.setupUi(self)

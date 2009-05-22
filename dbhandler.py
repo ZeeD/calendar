@@ -30,18 +30,40 @@ month|          |          |          |
 
 """
 
-from PyQt4.QtSql import QSqlDatabase
-from PyQt4.QtCore import QAbstractTableModel
+from PyQt4.QtSql import QSqlDatabase, QSqlQuery
+from PyQt4.QtCore import QAbstractTableModel, QModelIndex, QVariant
 
 class HeaderTable(QAbstractTableModel):
     """
     Strange Table model that reverse the real table
     """
     def __init__(self, dbname='calendar.db'):
+        QAbstractTableModel.__init__(self)
         self.dbname = dbname
         self.db = QSqlDatabase.addDatabase('QSQLITE')
         self.db.setDatabaseName(self.dbname)
         #self.db.open()
 
-    def __del__(self):
-        pass # self.db.close()
+    #def __del__(self):
+        #self.db.close()
+
+    def rowCount(self, model_index=None):
+        # mostro da -3 a +9 mesi
+        return 12
+
+    def columnCount(self, model_index=None):
+        try:
+            self.db.open()
+        except:
+            raise
+        else:
+            query = QSqlQuery('SELECT COUNT(*) from CLIENTS')
+            if not query.first():
+                raise "Are you sure there's a `CLIENTS' table?"
+            column_count = query.value(0).toInt()[0]
+        finally:
+            self.db.close()
+        return column_count
+
+    def data(self, model_index, role=None):
+        return QVariant(QVariant.Invalid)
