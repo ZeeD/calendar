@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ui version="4.0">
- <class>MainWindow</class>
- <widget class="QMainWindow" name="MainWindow">
+ <class>Calendar</class>
+ <widget class="QMainWindow" name="Calendar">
   <property name="geometry">
    <rect>
     <x>0</x>
@@ -16,7 +16,7 @@
   <widget class="QWidget" name="centralwidget">
    <layout class="QGridLayout" name="gridLayout">
     <item row="0" column="0">
-     <widget class="QTableWidget" name="calendarView">
+     <widget class="QTableView" name="Table">
       <property name="frameShape">
        <enum>QFrame::NoFrame</enum>
       </property>
@@ -52,10 +52,10 @@
    <attribute name="toolBarBreak">
     <bool>false</bool>
    </attribute>
-   <addaction name="actionInserisci_nuova_macchina"/>
+   <addaction name="NewMachine"/>
    <addaction name="action_Esci"/>
   </widget>
-  <action name="actionInserisci_nuova_macchina">
+  <action name="NewMachine">
    <property name="text">
     <string>Inserisci &amp;nuova macchina</string>
    </property>
@@ -71,7 +71,7 @@
   <connection>
    <sender>action_Esci</sender>
    <signal>activated()</signal>
-   <receiver>MainWindow</receiver>
+   <receiver>Calendar</receiver>
    <slot>close()</slot>
    <hints>
     <hint type="sourcelabel">
