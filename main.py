@@ -8,13 +8,12 @@ from main_ui import Ui_Calendar
 from PyQt4.QtGui import QMainWindow
 from new_machine import NewMachine
 
-DEBUG = True
-
-def PRINT(*args, **kwargs):
-    if DEBUG:
-        print "DBG args=%r, kwargs=%r" % (args, kwargs)
-
 class Calendar(QMainWindow):
+    """
+    Main window, should show a matrix month\client;
+    the items should be mostly empty: when necessary a "DA PAGARE"
+            or a date whith the payment
+    """
     def __init__(self, header_table):
         QMainWindow.__init__(self)
         self.header_table = header_table
@@ -23,7 +22,9 @@ class Calendar(QMainWindow):
         self.ui_calendar.Table.setModel(self.header_table)
 
     def on_NewMachine_triggered(self, checked=None):
-        if checked is None: return # fix a stupid double triggered (IMHO) bug
+        """Insert a new client into the database"""
+        if checked is None:
+            return # fix a stupid double triggered (IMHO) bug
         new_machine = NewMachine(self.header_table)
         new_machine.exec_()
         print new_machine

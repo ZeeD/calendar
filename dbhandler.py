@@ -40,30 +40,32 @@ class HeaderTable(QAbstractTableModel):
     def __init__(self, dbname='calendar.db'):
         QAbstractTableModel.__init__(self)
         self.dbname = dbname
-        self.db = QSqlDatabase.addDatabase('QSQLITE')
-        self.db.setDatabaseName(self.dbname)
+        self._db = QSqlDatabase.addDatabase('QSQLITE')
+        self._db.setDatabaseName(self.dbname)
         #self.db.open()
 
     #def __del__(self):
         #self.db.close()
 
     def rowCount(self, model_index=None):
-        # mostro da -3 a +9 mesi
-        return 12
+        """Tell the view how many months (rows) the model have"""
+        return 12 # I'll always show from -3 to +9 months
 
     def columnCount(self, model_index=None):
+        """Tell the view how many machines (columns) the model have"""
         try:
-            self.db.open()
+            self._db.open()
         except:
             raise
         else:
             query = QSqlQuery('SELECT COUNT(*) from CLIENTS')
             if not query.first():
-                raise "Are you sure there's a `CLIENTS' table?"
+                raise StandardError("Are you sure there's a `CLIENTS' table?")
             column_count = query.value(0).toInt()[0]
         finally:
-            self.db.close()
+            self._db.close()
         return column_count
 
     def data(self, model_index, role=None):
+        """STUB: use model_index to tell the view what the hell it's inside"""
         return QVariant(QVariant.Invalid)
