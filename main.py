@@ -20,6 +20,7 @@ class Calendar(QMainWindow):
         self.ui_calendar = Ui_Calendar()
         self.ui_calendar.setupUi(self)
         self.ui_calendar.Table.setModel(self.header_table)
+        self.ui_calendar.Table.resizeColumnsToContents()
 
     def on_NewMachine_triggered(self, checked=None):
         """Insert a new client into the database"""
@@ -27,7 +28,7 @@ class Calendar(QMainWindow):
             return # fix a stupid double triggered (IMHO) bug
         new_machine = NewMachine(self.header_table)
         new_machine.exec_()
-        print new_machine
+        self.ui_calendar.Table.resizeColumnsToContents()
 
 if __name__ == "__main__":
     from dbhandler import HeaderTable
