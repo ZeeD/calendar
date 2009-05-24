@@ -1,5 +1,6 @@
 begin transaction;
 
+drop table clients;
 create table clients (
     client varchar not null,
     machine varchar not null,
@@ -7,9 +8,11 @@ create table clients (
     deltamonth integer not null,
     anticiped bool not null);
 
+drop table payments;
 create table payments (
     clients_client varchar references clients(client) not null,
     clients_machine varchar references clients(machine) not null,
-    datepayd date not null);
+    datepayd date,
+    payed boolean not null);
 
 commit;

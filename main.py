@@ -24,6 +24,7 @@ class Calendar(QMainWindow):
 
     def on_NewMachine_triggered(self, checked=None):
         """Insert a new client into the database"""
+        # pylint: disable-msg=C0103
         if checked is None:
             return # fix a stupid double triggered (IMHO) bug
         new_machine = NewMachine(self.header_table)
