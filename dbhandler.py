@@ -31,7 +31,7 @@ month|          |          |          |
 """
 
 from PyQt4.QtSql import QSqlDatabase, QSqlQuery
-from PyQt4.QtCore import QAbstractTableModel, QVariant, Qt, SIGNAL
+from PyQt4.QtCore import QAbstractTableModel, QVariant, Qt, SIGNAL, QDate
 from datetime import date, datetime
 
 class HeaderTable(QAbstractTableModel):
@@ -86,6 +86,23 @@ class HeaderTable(QAbstractTableModel):
         print 'searching if (%s|%s|%s|%s|%s) has something into (%s|%s)' % (
                 client, machine, selldate, deltamonth, anticiped,
                 month, year)
+
+        query = QSqlQuery("""SELECT datepayd, payed FROM payments WHERE
+                clients_client = :client AND clients_machine = :machine AND
+                clients_selldate = :selldate AND
+                datepayd BETWEEN :datebefore AND :dateafter""", self._db)
+        query.bindValue(':client', QVariant(client))
+        query.bindValue(':machine', QVariant(machine))
+        query.bindValue(':selldate', QVariant(selldate))
+        # primo giorno del mese
+        d = QDate(year, month, 1)
+        query.bindValue(':datebefore', QVariant(d))
+        # ultimo giorno del mese
+        query.bindValue(':dateafter', QVariant(d.addMonths(1).addDays(-1)))
+        while query.next():
+            datepayd = query.value(0).toDate()
+            payed = query.value(1).toBool()
+            print '-f> found (%s|%s)' % (datepayd, payed)
         return QVariant()
 
     def headerData(self, section, orientation, role=None):
