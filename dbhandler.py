@@ -31,7 +31,7 @@ month|          |          |          |
 """
 
 from PyQt4.QtSql import QSqlDatabase, QSqlQuery
-from PyQt4.QtCore import QAbstractTableModel, QModelIndex, QVariant, Qt
+from PyQt4.QtCore import QAbstractTableModel, QModelIndex, QVariant, Qt, SIGNAL
 from datetime import date
 
 class HeaderTable(QAbstractTableModel):
@@ -43,6 +43,7 @@ class HeaderTable(QAbstractTableModel):
         self.dbname = dbname
         self._db = QSqlDatabase.addDatabase('QSQLITE')
         self._db.setDatabaseName(self.dbname)
+        self.fmt = '%s\n%s\n%s\nOgni %s mesi\nPagamento %scipato'
 
     def rowCount(self, model_index=None):
         """Tell the view how many months (rows) the model have"""
@@ -84,13 +85,12 @@ class HeaderTable(QAbstractTableModel):
                     raise StandardError("Non c'e' manco un risultato?")
                 if not query.seek(section):
                     raise StandardError('Not enough elements into the table')
-                string = '%s\n%s\n%s\nOgni %s mesi\nPagamento %scipato' % (
-                        query.value(0).toString(),
+
+                return QVariant(self.fmt % (query.value(0).toString(),
                         query.value(1).toString(),
-                        query.value(2).toDate().toPyDate().strftime('%d %B %Y'), # data
-                        query.value(3).toInt()[0], # intero
-                        'anti' if query.value(4).toBool() else 'posti')
-                return QVariant(string)
+                        query.value(2).toDate().toPyDate().strftime('%d %B %Y'),
+                        query.value(3).toInt()[0],
+                        'anti' if query.value(4).toBool() else 'posti'))
             finally:
                 self._db.close()
         else:
@@ -121,5 +121,6 @@ class HeaderTable(QAbstractTableModel):
             query.bindValue(':deltamonth', QVariant(deltamonth))
             query.bindValue(':anticiped', QVariant(anticiped))
             query.exec_()
+            self.emit(SIGNAL("layoutChanged()"))
         finally:
             self._db.close()

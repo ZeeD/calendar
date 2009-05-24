@@ -4,7 +4,7 @@ all: $(UIS) calendar.db
 	./main.py
 
 clean:
-	rm *pyc $(UIS) calendar.db *~ 2>/dev/null ; true
+	rm -f *pyc $(UIS) calendar.db *~
 
 %_ui.py: %.ui
 	pyuic4 -o $@ $<
