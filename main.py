@@ -7,6 +7,7 @@ Spreadsheet-like scrollable program I made for my dad
 from main_ui import Ui_Calendar
 from PyQt4.QtGui import QMainWindow
 from new_machine import NewMachine
+from dbhandler import EditableCheckboxDate
 
 class Calendar(QMainWindow):
     """
@@ -20,6 +21,8 @@ class Calendar(QMainWindow):
         self.ui_calendar = Ui_Calendar()
         self.ui_calendar.setupUi(self)
         self.ui_calendar.Table.setModel(self.header_table)
+        self.delegate = EditableCheckboxDate()
+        self.ui_calendar.Table.setItemDelegate(self.delegate)
         self.ui_calendar.Table.resizeColumnsToContents()
 
     def on_NewMachine_triggered(self, checked=None):

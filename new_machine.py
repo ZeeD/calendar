@@ -80,11 +80,3 @@ class NewMachine(QDialog):
                 self.ui_new_machine.Cliente.text(),
                 self.ui_new_machine.Macchina.text(),
                 self.ui_new_machine.DeltaMesi.value()]))
-
-    def __str__(self):
-        try:
-            return '|' + ', '.join("%r" % el for el in (self.client,
-                    self.machine, self.selldate, self.deltamonth,
-                    self.anticiped)) + '|'
-        except:
-            raise StandardError('You should exec_() the object first')
