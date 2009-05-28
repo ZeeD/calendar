@@ -33,7 +33,6 @@ month|          |          |          |
 from PyQt4.QtSql import QSqlDatabase, QSqlQuery
 from PyQt4.QtCore import QAbstractTableModel, QVariant, Qt, SIGNAL, QDate
 from PyQt4.QtGui import QItemDelegate, QCheckBox
-from datetime import date, datetime
 
 if False:
     QSQ = QSqlQuery
@@ -177,13 +176,13 @@ class HeaderTable(QAbstractTableModel):
                     client.selldate.toString('d MMMM yyyy'),
                     client.deltamonth, 'anti' if client.anticiped else 'posti'))
         else:
-            today = date.today()
-            year = today.year
-            month = today.month - self.months_before + section
+            today = QDate.currentDate()
+            year = today.year()
+            month = today.month() - self.months_before + section
             if month > 12:
-                year = today.year + 1
+                year += 1
                 month = ((month - 1) % 12 ) + 1
-            return QVariant(date(year, month, 1).strftime('%B %Y'))
+            return QVariant(QDate(year, month, 1).toString('MMMM yyyy'))
 
     def add_new_machine(self, client, machine, selldate, deltamonth, anticiped):
         """Insert a single row into the CLIENTS table"""
