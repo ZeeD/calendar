@@ -1,24 +1,24 @@
-begin transaction;
+BEGIN TRANSACTION;
 
-drop table if exists clients;
-create table clients (
-    client varchar not null,
-    machine varchar not null,
-    selldate date not null,
-    deltamonth integer not null,
-    anticiped bool not null,
-    primary key (client, machine, selldate));
+DROP TABLE IF EXISTS clients;
+CREATE TABLE clients (
+    client VARCHAR NOT NULL,
+    machine VARCHAR NOT NULL,
+    selldate DATE NOT NULL,
+    deltamonth INTEGER NOT NULL,
+    anticiped BOOLEAN NOT NULL,
+    PRIMARY KEY (client, machine, selldate));
 
-drop table if exists payments;
-create table payments (
-    clients_client varchar references clients(client) not null,
-    clients_machine varchar references clients(machine) not null,
-    clients_selldate varchar references clients(selldate) not null,
-    expected_datepayd date not null,
-    effective_datepayd date default null,
-    primary key (clients_client, clients_machine, clients_selldate,
+DROP TABLE IF EXISTS payments;
+CREATE TABLE payments (
+    clients_client VARCHAR NOT NULL,
+    clients_machine VARCHAR NOT NULL,
+    clients_selldate VARCHAR NOT NULL,
+    expected_datepayd DATE NOT NULL,
+    effective_datepayd DATE DEFAULT NULL,
+    PRIMARY KEY (clients_client, clients_machine, clients_selldate,
             expected_datepayd),
-    foreign key (clients_client, clients_machine, clients_selldate)
-            references clients (client, machine, selldate));
+    FOREIGN KEY (clients_client, clients_machine, clients_selldate)
+            REFERENCES clients (client, machine, selldate));
 
-commit;
+COMMIT;
