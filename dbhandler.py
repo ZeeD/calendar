@@ -32,7 +32,7 @@ month|          |          |          |
 
 from PyQt4.QtSql import QSqlDatabase, QSqlQuery
 from PyQt4.QtCore import QAbstractTableModel, QVariant, Qt, SIGNAL, QDate
-from PyQt4.QtGui import QItemDelegate, QCheckBox
+from PyQt4.QtGui import QItemDelegate, QDateEdit#, QCheckBox
 
 QSQ = QSqlQuery
 class QSqlQuery(QSQ):
@@ -68,30 +68,27 @@ class Payment(object):
                 record.indexOf('clients_selldate')).toDate()
         self.expected_datepayd = query.value(
                 record.indexOf('expected_datepayd')).toDate()
-        # TODO: query.isNull(colonna)
         self.effective_datepayd = query.value(
                 record.indexOf('effective_datepayd')).toDate()
+        self.payed = not query.isNull(record.indexOf('effective_datepayd'))
 
 class EditableCheckboxDate(QItemDelegate):
-    # const QStyleOptionViewItem & option, const QModelIndex &index
+    format = 'dd MMMM yyyy'
     def createEditor(self, parent, option, index):
-        return QCheckBox(parent)
+        """Create the Date edit widget to set the payment date"""
+        qde = QDateEdit(parent)
+        qde.setDisplayFormat(self.format)
+        qde.setCalendarPopup(True)
+        return qde
 
-    #QWidget *editor, const QModelIndex &index
     def setEditorData(self, editor, index):
-        # piglia i dati dal model di index e modifica editor
-        data = index.data().toString()
-        print 'DBG %r' % (data)
-        editor.setText(data)
-        editor.setChecked(True)
+        """Set the "default" editor data (from the index)"""
+        editor.setDate(QDate.fromString(index.data().toString(), self.format))
 
-    # QWidget *editor, QAbstractItemModel *model, const QModelIndex &index
     def setModelData(self, editor, model, index):
-        print "TODO: setModelData"
-        pass # scrivi nel model
-
-    def updateEditorGeometry(self, editor, option, index):
-        editor.setGeometry(option.rect)
+        """Tell the model to set the new data taken from the editor"""
+        model.setData(index, editor.date().toString(self.format), Qt.EditRole)
+        #model.setData(index, Qt.Checked, Qt.CheckStateRole) # do I need this?
 
 class HeaderTable(QAbstractTableModel):
     """

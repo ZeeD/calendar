@@ -21,8 +21,8 @@ class Calendar(QMainWindow):
         self.ui_calendar = Ui_Calendar()
         self.ui_calendar.setupUi(self)
         self.ui_calendar.Table.setModel(self.header_table)
-        #self.delegate = EditableCheckboxDate()
-        #self.ui_calendar.Table.setItemDelegate(self.delegate)
+        self.delegate = EditableCheckboxDate()
+        self.ui_calendar.Table.setItemDelegate(self.delegate)
         self.ui_calendar.Table.resizeColumnsToContents()
 
     def on_NewMachine_triggered(self, checked=None):
