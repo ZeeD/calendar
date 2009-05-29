@@ -63,8 +63,11 @@ class Payment(object):
         self.client = query.value(record.indexOf('clients_client')).toString()
         self.machine = query.value(record.indexOf('clients_machine')).toString()
         self.selldate = query.value(record.indexOf('clients_selldate')).toDate()
-        self.datepayd = query.value(record.indexOf('datepayd')).toDate()
-        self.payed = query.value(record.indexOf('payed')).toBool()
+        self.expected_datepayd = query.value(
+                record.indexOf('expected_datepayd')).toDate()
+        # TODO: query.isNull(colonna)
+        self.effective_datepayd = query.value(
+                record.indexOf('effective_datepayd')).toDate()
 
 class EditableCheckboxDate(QItemDelegate):
     # const QStyleOptionViewItem & option, const QModelIndex &index
@@ -79,6 +82,7 @@ class EditableCheckboxDate(QItemDelegate):
 
     # QWidget *editor, QAbstractItemModel *model, const QModelIndex &index
     def setModelData(self, editor, model, index):
+        print "TODO: setModelData"
         pass # scrivi nel model
 
     def updateEditorGeometry(self, editor, option, index):
@@ -134,10 +138,11 @@ class HeaderTable(QAbstractTableModel):
         selldate = QDate.fromString(client_machine[2], 'd MMMM yyyy')
         deltamonth = int(client_machine[3][5:-5]) # [len('Ogni '):-len(' mesi')]
         anticiped = client_machine[4][10:-6] == 'anti' # 'Pagamento ':-'cipato'
-        query = QSqlQuery('SELECT datepayd, payed FROM payments WHERE '
-                'clients_client = :client AND clients_machine = :machine AND '
-                'clients_selldate = :selldate AND datepayd BETWEEN :datebefore '
-                'AND :dateafter', self._db)
+        query = QSqlQuery('SELECT expected_datepayd, effective_datepayd FROM '
+                'payments WHERE clients_client = :client AND clients_machine = '
+                ':machine AND clients_selldate = :selldate AND '
+                'expected_datepayd BETWEEN :datebefore AND :dateafter',
+                self._db)
         query.bindValue(':client', QVariant(client))
         query.bindValue(':machine', QVariant(machine))
         query.bindValue(':selldate', QVariant(selldate))
@@ -149,10 +154,10 @@ class HeaderTable(QAbstractTableModel):
         if not query.exec_():
             raise StandardError('SYNTAX ERROR')
         while query.next():
-            datepayd = query.value(0).toDate()
-            payed = query.value(1).toBool()
-            return QVariant('%s%s' % (datepayd.toString('d MMMM yyyy'),
-                    'Pagato' if payed else 'Da pagare'))
+            expected_datepayd = query.value(0).toDate()
+            effective_datepayd = query.isNull(1)
+            return QVariant('%s%s' % (expected_datepayd.toString('d MMMM yyyy'),
+                    'Pagato' if effective_datepayd else 'Da pagare'))
         return QVariant()
 
     def headerData(self, section, orientation, role=None):
@@ -216,10 +221,11 @@ class HeaderTable(QAbstractTableModel):
                 # ignora date non visibili
                 payments_date = payments_date.addMonths(client.deltamonth)
             while payments_date < dateafter:
-                query2 = QSqlQuery('SELECT payed FROM payments WHERE '
-                        'clients_client = :clients_client AND clients_machine '
-                        '= :clients_machine AND clients_selldate = '
-                        ':clients_selldate AND datepayd = :datepayd', self._db)
+                query2 = QSqlQuery('SELECT effective_datepayd FROM payments '
+                        'WHERE clients_client = :clients_client AND '
+                        'clients_machine = :clients_machine AND '
+                        'clients_selldate = :clients_selldate AND '
+                        'expected_datepayd = :datepayd', self._db)
                 query2.bindValue(':clients_client', QVariant(client.client))
                 query2.bindValue(':clients_machine', QVariant(client.machine))
                 query2.bindValue(':clients_selldate', QVariant(client.selldate))
@@ -228,16 +234,16 @@ class HeaderTable(QAbstractTableModel):
                     raise StandardError('SYNTAX ERROR')
                 if not query2.first():
                     query3 = QSqlQuery('INSERT INTO payments (clients_client, '
-                            'clients_machine, clients_selldate, datepayd, '
-                            'payed) VALUES (:clients_client, :clients_machine, '
-                            ':clients_selldate, :datepayd, :payed)', self._db)
+                            'clients_machine, clients_selldate, '
+                            'expected_datepayd) VALUES (:clients_client, '
+                            ':clients_machine, :clients_selldate, :datepayd)',
+                            self._db)
                     query3.bindValue(':clients_client', QVariant(client.client))
                     query3.bindValue(':clients_machine',
                             QVariant(client.machine))
                     query3.bindValue(':clients_selldate',
                             QVariant(client.selldate))
                     query3.bindValue(':datepayd', QVariant(payments_date))
-                    query3.bindValue(':payed', QVariant(False))
                     if not query3.exec_():
                         raise StandardError('SYNTAX ERROR')
                 payments_date = payments_date.addMonths(client.deltamonth)

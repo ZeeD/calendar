@@ -27,7 +27,7 @@ class CustomModel(QAbstractTableModel):
 
     def flags(self, index):
         if index.isValid():
-            return Qt.ItemIsEditable | Qt.ItemIsSelectable | Qt.ItemIsEnabled
+            return Qt.ItemIsSelectable | Qt.ItemIsEnabled | Qt.ItemIsEditable
         else:
             return Qt.NoItemFlags
 
