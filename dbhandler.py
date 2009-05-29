@@ -34,19 +34,20 @@ from PyQt4.QtSql import QSqlDatabase, QSqlQuery
 from PyQt4.QtCore import QAbstractTableModel, QVariant, Qt, SIGNAL, QDate
 from PyQt4.QtGui import QItemDelegate, QCheckBox
 
-if False:
-    QSQ = QSqlQuery
-    class QSqlQuery(QSQ):
-        def exec_(self):
-            ret = QSQ.exec_(self)
-            if ret:
-                r = unicode(self.executedQuery())
-                for k, v in self.boundValues().items():
-                    r = r.replace(unicode(k), '%r' % unicode(v.toPyObject()))
-                print '[OK|%s]' % (r, )
-            else:
-                print '[ER|%s|%s]' % (self.lastQuery(), self.lastError().text())
+QSQ = QSqlQuery
+class QSqlQuery(QSQ):
+    def exec_(self, DEBUG=False):
+        ret = QSQ.exec_(self)
+        if not DEBUG:
             return ret
+        if ret:
+            r = unicode(self.executedQuery())
+            for k, v in self.boundValues().items():
+                r = r.replace(unicode(k), '%r' % unicode(v.toPyObject()))
+            print '[OK|%s]' % (r, )
+        else:
+            print '[ER|%s|%s]' % (self.lastQuery(), self.lastError().text())
+        return ret
 
 class Client(object):
     def __init__(self, query):
@@ -61,8 +62,10 @@ class Payment(object):
     def __init__(self, query):
         record = query.record()
         self.client = query.value(record.indexOf('clients_client')).toString()
-        self.machine = query.value(record.indexOf('clients_machine')).toString()
-        self.selldate = query.value(record.indexOf('clients_selldate')).toDate()
+        self.machine = query.value(
+                record.indexOf('clients_machine')).toString()
+        self.selldate = query.value(
+                record.indexOf('clients_selldate')).toDate()
         self.expected_datepayd = query.value(
                 record.indexOf('expected_datepayd')).toDate()
         # TODO: query.isNull(colonna)
@@ -77,7 +80,9 @@ class EditableCheckboxDate(QItemDelegate):
     #QWidget *editor, const QModelIndex &index
     def setEditorData(self, editor, index):
         # piglia i dati dal model di index e modifica editor
-        editor.setText('data')
+        data = index.data().toString()
+        print 'DBG %r' % (data)
+        editor.setText(data)
         editor.setChecked(True)
 
     # QWidget *editor, QAbstractItemModel *model, const QModelIndex &index
@@ -100,20 +105,21 @@ class HeaderTable(QAbstractTableModel):
         self._db.open()
         self.months_before = 3
         self.months_afther = 9
+        self.update_db_content()
 
     def __del__(self):
         self._db.close()
 
-    def rowCount(self, model_index=None):
+    def rowCount(self, index=None):
         """Tell the view how many months (rows) the model have"""
         # pylint: disable-msg=C0103
-        assert not model_index.isValid()
+        assert not index.isValid()
         return self.months_before + self.months_afther
 
-    def columnCount(self, model_index=None):
+    def columnCount(self, index=None):
         """Tell the view how many machines (columns) the model have"""
         # pylint: disable-msg=C0103
-        assert not model_index.isValid()
+        assert not index.isValid()
         query = QSqlQuery('SELECT COUNT(*) FROM clients', self._db)
         if not query.exec_():
             raise StandardError('SYNTAX ERROR')
@@ -121,23 +127,25 @@ class HeaderTable(QAbstractTableModel):
             raise StandardError('No table found (or no elements)')
         return query.value(0).toInt()[0]
 
-    def data(self, model_index, role=None):
-        """TODO: use model_index to tell the view what the hell it's inside"""
-        if role != Qt.DisplayRole:
+    def data(self, index, role=None):
+        """return a QVariant saying if exists a payment at index.(row|column)"""
+        if not index.isValid() or role not in (Qt.DisplayRole,
+                Qt.CheckStateRole):
             return QVariant()
+        #self.update_db_content()
         # find the month from the row number
-        month_year = QDate().fromString(self.headerData(model_index.row(),
+        month_year = QDate().fromString(self.headerData(index.row(),
                 Qt.Vertical, role).toString(), 'MMMM yyyy')
         month = month_year.month()
         year = month_year.year()
         # find the client from the column number
-        client_machine = unicode(self.headerData(model_index.column(),
-                Qt.Horizontal, role).toString()).split('\n')
-        client = client_machine[0]
-        machine = client_machine[1]
-        selldate = QDate.fromString(client_machine[2], 'd MMMM yyyy')
-        deltamonth = int(client_machine[3][5:-5]) # [len('Ogni '):-len(' mesi')]
-        anticiped = client_machine[4][10:-6] == 'anti' # 'Pagamento ':-'cipato'
+        header_infos = self.headerData(index.column(), Qt.Horizontal,
+                role).toString().split('\n')
+        client = header_infos[0]
+        machine = header_infos[1]
+        selldate = QDate.fromString(header_infos[2], 'd MMMM yyyy')
+        deltamonth = int(header_infos[3][5:-5]) # [len('Ogni '):-len(' mesi')]
+        anticiped = header_infos[4][10:-6] == 'anti' # 'Pagamento ':-'cipato'
         query = QSqlQuery('SELECT expected_datepayd, effective_datepayd FROM '
                 'payments WHERE clients_client = :client AND clients_machine = '
                 ':machine AND clients_selldate = :selldate AND '
@@ -153,17 +161,21 @@ class HeaderTable(QAbstractTableModel):
         query.bindValue(':dateafter', QVariant(d.addMonths(1).addDays(-1)))
         if not query.exec_():
             raise StandardError('SYNTAX ERROR')
-        while query.next():
-            expected_datepayd = query.value(0).toDate()
-            effective_datepayd = query.isNull(1)
-            return QVariant('%s%s' % (expected_datepayd.toString('d MMMM yyyy'),
-                    'Pagato' if effective_datepayd else 'Da pagare'))
-        return QVariant()
+        if not query.first():
+            return QVariant()
+        expected_datepayd = query.value(0).toDate()
+        payed = not query.isNull(1)
+        effective_datepayd = query.value(1).toDate()
+        if role == Qt.CheckStateRole:
+            return QVariant(Qt.Checked if payed else Qt.Unchecked)
+        else: # DisplayRole
+            date = effective_datepayd if payed else expected_datepayd
+            return QVariant(date.toString('d MMMM yyyy'))
 
     def headerData(self, section, orientation, role=None):
         """Generate the months on the rows and the clients on the columns"""
         # pylint: disable-msg=C0103
-        if role != Qt.DisplayRole:
+        if role not in (Qt.DisplayRole, Qt.CheckStateRole):
             return QVariant()
         if orientation == Qt.Horizontal:
             query = QSqlQuery('SELECT client, machine, selldate, deltamonth, '
@@ -181,13 +193,8 @@ class HeaderTable(QAbstractTableModel):
                     client.selldate.toString('d MMMM yyyy'),
                     client.deltamonth, 'anti' if client.anticiped else 'posti'))
         else:
-            today = QDate.currentDate()
-            year = today.year()
-            month = today.month() - self.months_before + section
-            if month > 12:
-                year += 1
-                month = ((month - 1) % 12 ) + 1
-            return QVariant(QDate(year, month, 1).toString('MMMM yyyy'))
+            return QVariant(QDate.currentDate().addMonths(
+                    section - self.months_before).toString('MMMM yyyy'))
 
     def add_new_machine(self, client, machine, selldate, deltamonth, anticiped):
         """Insert a single row into the CLIENTS table"""
@@ -203,6 +210,22 @@ class HeaderTable(QAbstractTableModel):
             raise StandardError('SYNTAX ERROR')
         self.update_db_content()
 
+    def setData(self, index, value, role=None):
+        if not index.isValid() or role not in (Qt.EditRole, Qt.CheckStateRole):
+            return False
+        print 'TODO setData(%s, %s, %s)' % (index, value, role)
+        self.emit(SIGNAL("dataChanged()"), index, index)
+        return True
+
+    def flags(self, index):
+        """A valid index is selectable, enabled and maybe editable"""
+        if not index.isValid():
+            return Qt.NoItemFlags
+        default_flags = QAbstractTableModel.flags(self, index)
+        if not self.data(index, Qt.DisplayRole).isValid():
+            return default_flags
+        return default_flags | Qt.ItemIsEditable | Qt.ItemIsUserCheckable
+
     def update_db_content(self):
         """Populate the payment table ensuring all "visible" data"""
         today = QDate.currentDate()
@@ -217,33 +240,29 @@ class HeaderTable(QAbstractTableModel):
             client = Client(query)
             payments_date = client.selldate.addMonths(0 if client.anticiped
                     else client.deltamonth)
-            while payments_date < datebefore:
-                # ignora date non visibili
+            while payments_date < datebefore: # ignora date non visibili
                 payments_date = payments_date.addMonths(client.deltamonth)
             while payments_date < dateafter:
                 query2 = QSqlQuery('SELECT effective_datepayd FROM payments '
-                        'WHERE clients_client = :clients_client AND '
-                        'clients_machine = :clients_machine AND '
-                        'clients_selldate = :clients_selldate AND '
-                        'expected_datepayd = :datepayd', self._db)
-                query2.bindValue(':clients_client', QVariant(client.client))
-                query2.bindValue(':clients_machine', QVariant(client.machine))
-                query2.bindValue(':clients_selldate', QVariant(client.selldate))
-                query2.bindValue(':datepayd', QVariant(payments_date))
+                        'WHERE clients_client = :client AND clients_machine = '
+                        ':machine AND clients_selldate = :selldate AND '
+                        'expected_datepayd = :expected_datepayd', self._db)
+                query2.bindValue(':client', QVariant(client.client))
+                query2.bindValue(':machine', QVariant(client.machine))
+                query2.bindValue(':selldate', QVariant(client.selldate))
+                query2.bindValue(':expected_datepayd', QVariant(payments_date))
                 if not query2.exec_():
                     raise StandardError('SYNTAX ERROR')
                 if not query2.first():
                     query3 = QSqlQuery('INSERT INTO payments (clients_client, '
                             'clients_machine, clients_selldate, '
-                            'expected_datepayd) VALUES (:clients_client, '
-                            ':clients_machine, :clients_selldate, :datepayd)',
-                            self._db)
-                    query3.bindValue(':clients_client', QVariant(client.client))
-                    query3.bindValue(':clients_machine',
-                            QVariant(client.machine))
-                    query3.bindValue(':clients_selldate',
-                            QVariant(client.selldate))
-                    query3.bindValue(':datepayd', QVariant(payments_date))
+                            'expected_datepayd) VALUES (:client, :machine, '
+                            ':selldate, :expected_datepayd)', self._db)
+                    query3.bindValue(':client', QVariant(client.client))
+                    query3.bindValue(':machine', QVariant(client.machine))
+                    query3.bindValue(':selldate', QVariant(client.selldate))
+                    query3.bindValue(':expected_datepayd',
+                            QVariant(payments_date))
                     if not query3.exec_():
                         raise StandardError('SYNTAX ERROR')
                 payments_date = payments_date.addMonths(client.deltamonth)
