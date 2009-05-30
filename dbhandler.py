@@ -73,7 +73,7 @@ class Payment(object):
         self.payed = not query.isNull(record.indexOf('effective_datepayd'))
 
 class EditableCheckboxDate(QItemDelegate):
-    format = 'dd MMMM yyyy'
+    format = 'd MMMM yyyy'
     def createEditor(self, parent, option, index):
         """Create the Date edit widget to set the payment date"""
         qde = QDateEdit(parent)
@@ -210,7 +210,7 @@ class HeaderTable(QAbstractTableModel):
         if not index.isValid() or role not in (Qt.EditRole, Qt.CheckStateRole):
             return False
         expected_datepayd = QDate.fromString(index.data().toString(),
-                'dd MMMM yyyy')
+                'd MMMM yyyy')
         if role == Qt.EditRole:
             effective_datepayd = value.toDate()
         elif value.toInt()[0] == Qt.Checked:
@@ -228,13 +228,13 @@ class HeaderTable(QAbstractTableModel):
                 Qt.DisplayRole).toString().split('\n')
         client = header_data[0]
         machine = header_data[1]
-        selldate = QDate.fromString(header_data[2], 'dd MMMM yyyy')
+        selldate = QDate.fromString(header_data[2], 'd MMMM yyyy')
         query.bindValue(':effective_datepayd', QVariant(effective_datepayd))
         query.bindValue(':clients_client', QVariant(client))
         query.bindValue(':clients_machine', QVariant(machine))
         query.bindValue(':clients_selldate', QVariant(selldate))
         query.bindValue(':expected_datepayd', QVariant(expected_datepayd))
-        if not query.exec_(True):
+        if not query.exec_():
             raise StandardError('SYNTAX ERROR')
         self.emit(SIGNAL("dataChanged()"), index, index)
         return True
