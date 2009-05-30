@@ -87,8 +87,7 @@ class EditableCheckboxDate(QItemDelegate):
 
     def setModelData(self, editor, model, index):
         """Tell the model to set the new data taken from the editor"""
-        model.setData(index, editor.date().toString(self.format), Qt.EditRole)
-        #model.setData(index, Qt.Checked, Qt.CheckStateRole) # do I need this?
+        model.setData(index, QVariant(editor.date()), Qt.EditRole)
 
 class HeaderTable(QAbstractTableModel):
     """
@@ -210,7 +209,33 @@ class HeaderTable(QAbstractTableModel):
     def setData(self, index, value, role=None):
         if not index.isValid() or role not in (Qt.EditRole, Qt.CheckStateRole):
             return False
-        print 'TODO setData(%s, %s, %s)' % (index, value, role)
+        expected_datepayd = QDate.fromString(index.data().toString(),
+                'dd MMMM yyyy')
+        if role == Qt.EditRole:
+            effective_datepayd = value.toDate()
+        elif value.toInt()[0] == Qt.Checked:
+            effective_datepayd = expected_datepayd
+        else:
+            print 'Error: Non puoi annullare i pagamenti'
+            return False
+        query = QSqlQuery('UPDATE payments SET effective_datepayd = '
+                ':effective_datepayd WHERE clients_client = :clients_client '
+                'AND clients_machine = :clients_machine AND clients_selldate = '
+                ':clients_selldate AND expected_datepayd = :expected_datepayd',
+                self._db)
+        # TODO: trovare client, machine, selldate
+        header_data = self.headerData(index.column(), Qt.Horizontal,
+                Qt.DisplayRole).toString().split('\n')
+        client = header_data[0]
+        machine = header_data[1]
+        selldate = QDate.fromString(header_data[2], 'dd MMMM yyyy')
+        query.bindValue(':effective_datepayd', QVariant(effective_datepayd))
+        query.bindValue(':clients_client', QVariant(client))
+        query.bindValue(':clients_machine', QVariant(machine))
+        query.bindValue(':clients_selldate', QVariant(selldate))
+        query.bindValue(':expected_datepayd', QVariant(expected_datepayd))
+        if not query.exec_(True):
+            raise StandardError('SYNTAX ERROR')
         self.emit(SIGNAL("dataChanged()"), index, index)
         return True
 
