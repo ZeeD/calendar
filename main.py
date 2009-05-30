@@ -5,7 +5,8 @@ Spreadsheet-like scrollable program I made for my dad
 """
 
 from main_ui import Ui_Calendar
-from PyQt4.QtGui import QMainWindow
+from PyQt4.QtGui import QMainWindow, QPrinter, QPrintDialog, QDialog, QPainter
+from PyQt4.QtCore import QPoint
 from new_machine import NewMachine
 from dbhandler import EditableCheckboxDate
 
@@ -33,6 +34,31 @@ class Calendar(QMainWindow):
         new_machine = NewMachine(self.header_table)
         new_machine.exec_()
         self.ui_calendar.Table.resizeColumnsToContents()
+
+    def on_stampa_triggered(self, checked=None):
+        if checked is None:
+            return
+        printer = QPrinter()
+        print_dialog = QPrintDialog(printer, self)
+        if print_dialog.exec_() == QDialog.Accepted:
+            printer.setOrientation(QPrinter.Landscape)
+            painter = QPainter()
+            painter.begin(printer)
+            geometry = self.ui_calendar.Table.geometry()
+            self.ui_calendar.Table.setGeometry(printer.pageRect())
+            self.ui_calendar.Table.render(painter)
+            self.ui_calendar.Table.setGeometry(geometry)
+            painter.end()
+
+    def on_MonthsBeforeSlider_valueChanged(self, value):
+        model = self.ui_calendar.Table.model()
+        model.months_before = value
+        model.update_db_content()
+
+    def on_MonthsAfterSlider_valueChanged(self, value):
+        model = self.ui_calendar.Table.model()
+        model.months_after = value
+        model.update_db_content()
 
 if __name__ == "__main__":
     from dbhandler import HeaderTable

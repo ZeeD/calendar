@@ -100,7 +100,7 @@ class HeaderTable(QAbstractTableModel):
         self._db.setDatabaseName(self.dbname)
         self._db.open()
         self.months_before = 3
-        self.months_afther = 9
+        self.months_after = 9
         self.update_db_content()
 
     def __del__(self):
@@ -110,7 +110,7 @@ class HeaderTable(QAbstractTableModel):
         """Tell the view how many months (rows) the model have"""
         # pylint: disable-msg=C0103
         assert not index.isValid()
-        return self.months_before + self.months_afther
+        return self.months_before + self.months_after
 
     def columnCount(self, index=None):
         """Tell the view how many machines (columns) the model have"""
@@ -253,7 +253,7 @@ class HeaderTable(QAbstractTableModel):
         today = QDate.currentDate()
         first_month_day = QDate(today.year(), today.month(), 1)
         datebefore = first_month_day.addMonths(-self.months_before)
-        dateafter = first_month_day.addMonths(self.months_afther)
+        dateafter = first_month_day.addMonths(self.months_after)
         query = QSqlQuery('SELECT client, machine, selldate, deltamonth, '
                 'anticiped FROM clients', self._db)
         if not query.exec_():
