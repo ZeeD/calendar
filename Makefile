@@ -10,7 +10,7 @@ clean:
 	rm -f *pyc $(UIS) calendar.db *~
 
 lint: uis
-	pylint $(PYS)
+	pylint -f colorized -i y -r n $(PYS)
 
 %_ui.py: %.ui
 	pyuic4 -o $@ $<

@@ -6,7 +6,6 @@ Spreadsheet-like scrollable program I made for my dad
 
 from main_ui import Ui_Calendar
 from PyQt4.QtGui import QMainWindow, QPrinter, QPrintDialog, QDialog, QPainter
-from PyQt4.QtCore import QPoint
 from new_machine import NewMachine
 from dbhandler import EditableCheckboxDate
 
@@ -36,6 +35,7 @@ class Calendar(QMainWindow):
         self.ui_calendar.Table.resizeColumnsToContents()
 
     def on_stampa_triggered(self, checked=None):
+        """Slot launched when the user click on the "stampa" button"""
         if checked is None:
             return
         printer = QPrinter()
@@ -51,11 +51,13 @@ class Calendar(QMainWindow):
             painter.end()
 
     def on_MonthsBeforeSlider_valueChanged(self, value):
+        """add/remove the model to calculate the values for value months"""
         model = self.ui_calendar.Table.model()
         model.months_before = value
         model.update_db_content()
 
     def on_MonthsAfterSlider_valueChanged(self, value):
+        """add/remove the model to calculate the values for value months"""
         model = self.ui_calendar.Table.model()
         model.months_after = value
         model.update_db_content()
